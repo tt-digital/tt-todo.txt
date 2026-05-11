@@ -365,7 +365,7 @@ if (isset($_GET['action'])) {
 
 <!-- ── Footer ─────────────────────────────────────────────────────── -->
 <footer class="md:ml-56 px-4 py-3 text-center text-[11px] text-gray-300">
-  tt-todo.txt v1.0.0 &nbsp;·&nbsp; &copy; 2026 <a href="https://tt-digital.de" class="hover:text-gray-400 transition-colors">tt-digital.de</a>
+  tt-todo.txt v1.0.1 &nbsp;·&nbsp; &copy; 2026 <a href="https://tt-digital.de" class="hover:text-gray-400 transition-colors">tt-digital.de</a>
 </footer>
 
 <!-- ── Mobile theme toggle ────────────────────────────────────────── -->
