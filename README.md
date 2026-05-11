@@ -16,15 +16,25 @@ A minimal, single-file PHP frontend for the [todo.txt](http://todotxt.org) plain
 - **Mobile-friendly** — responsive layout, touch-optimized, no dependencies beyond Tailwind CDN
 - **Single file** — everything in `index.php`, no build step, no framework
 
+## Files
+
+| File | Purpose |
+|---|---|
+| `index.php` | The entire application |
+| `todo.txt` | Active tasks — read and written by the app |
+| `done.txt` | Archived tasks — appended to when you archive completed tasks |
+
+Both `todo.txt` and `done.txt` are created automatically if they don't exist. You can also seed them with your own data before uploading.
+
 ## Requirements
 
-- PHP 7.4+ (tested on PHP 8.3)
+- PHP 8.0+ (tested on PHP 8.3)
 - A writable directory for `todo.txt` and `done.txt`
 
 ## Installation
 
 1. Upload `index.php` to any PHP-capable web server
-2. Place your `todo.txt` in the same directory (or let the app create it)
+2. Optionally place your `todo.txt` and/or `done.txt` in the same directory
 3. Done — open the URL in a browser
 
 ## todo.txt format
