@@ -1,0 +1,32 @@
+x 2026-05-10 2026-05-01 Set up project repository on GitHub +Dev @computer
+x 2026-05-10 2026-05-02 Buy new laptop charger +Shopping @errands
+x 2026-05-09 2026-05-02 Finish onboarding documentation +Work @computer
+x 2026-05-09 2026-05-03 Call internet provider about slow speeds +Home @phone
+x 2026-05-08 2026-05-03 Submit tax return +Finance @computer
+x 2026-05-08 2026-05-04 Update dependencies in main project +Dev @computer
+x 2026-05-07 2026-05-04 Send weekly newsletter +Work @email
+x 2026-05-07 2026-05-04 Buy birthday card for dad +Shopping @errands
+x 2026-05-06 2026-05-05 Fix CSS layout issue on mobile +Dev @computer
+x 2026-05-06 2026-05-05 Schedule team lunch +Work @phone
+x 2026-05-05 2026-05-01 Renew domain names for next year +Dev @computer
+x 2026-05-05 2026-05-02 Clean out email inbox +Personal @email
+x 2026-05-04 2026-05-01 Research new project management tool +Work @computer
+x 2026-05-04 2026-05-02 Book hotel for summer holiday +Travel @computer
+x 2026-05-03 2026-05-01 Set up two-factor auth on all accounts +Personal @computer
+x 2026-05-03 2026-05-02 Order business cards +Work @computer
+x 2026-05-02 2026-04-29 Finish reading "Clean Code" +Personal @home
+x 2026-05-02 2026-04-30 Pay electricity bill +Finance @computer
+x 2026-05-01 2026-04-28 Deploy hotfix to production +Dev @computer
+x 2026-05-01 2026-04-29 Grocery run for dinner party +Shopping @errands
+x 2026-04-30 2026-04-25 Write retrospective notes from last sprint +Work @computer
+x 2026-04-30 2026-04-26 Cancel gym membership +Finance @phone
+x 2026-04-29 2026-04-24 Review candidates for junior dev position +Work @computer
+x 2026-04-29 2026-04-25 Install smoke detectors in hallway +Home @home
+x 2026-04-28 2026-04-22 Set up staging environment +Dev @computer
+x 2026-04-28 2026-04-23 Donate to open source project +Personal @computer
+x 2026-04-27 2026-04-21 Plan team offsite agenda +Work @computer
+x 2026-04-27 2026-04-22 Buy new coffee maker for office +Work @errands
+x 2026-04-26 2026-04-20 Archive old project files +Work @computer
+x 2026-04-26 2026-04-21 Fix broken link on company website +Dev @computer
+x 2026-04-25 2026-04-19 Set up monitoring dashboard +Dev @computer
+x 2026-04-25 2026-04-20 Send contract to new freelancer +Work @email
