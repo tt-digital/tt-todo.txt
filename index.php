@@ -214,7 +214,7 @@ if (isset($_GET['action'])) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>todo.txt</title>
+  <title>tt-todo.txt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
@@ -286,7 +286,7 @@ if (isset($_GET['action'])) {
 <!-- ── Desktop sidebar ───────────────────────────────────────────── -->
 <aside id="sidebar" class="hidden md:flex flex-col fixed inset-y-0 left-0 w-56 bg-white border-r border-gray-100 p-4 z-10 overflow-y-auto">
   <div class="flex items-center justify-between mb-5">
-    <div class="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400">todo.txt</div>
+    <div class="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400">tt-todo.txt</div>
     <button id="theme-btn" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-colors text-base" title="Toggle theme">🌙</button>
   </div>
 
@@ -365,7 +365,7 @@ if (isset($_GET['action'])) {
 
 <!-- ── Footer ─────────────────────────────────────────────────────── -->
 <footer class="md:ml-56 px-4 py-3 text-center text-[11px] text-gray-300">
-  &copy; 2026 tt-digital.de
+  tt-todo.txt v1.0.0 &nbsp;·&nbsp; &copy; 2026 <a href="https://tt-digital.de" class="hover:text-gray-400 transition-colors">tt-digital.de</a>
 </footer>
 
 <!-- ── Mobile theme toggle ────────────────────────────────────────── -->
