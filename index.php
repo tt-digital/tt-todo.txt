@@ -8,7 +8,7 @@ function readLines(string $file): array {
 }
 
 function writeLines(string $file, array $lines): void {
-    $lines = array_values(array_filter($lines, function($l) { return trim($l) !== ''; }));
+    $lines   = array_values(array_filter($lines, fn($l) => trim($l) !== ''));
     $content = $lines ? implode("\n", $lines) . "\n" : '';
     $fp = fopen($file, 'c');
     if (!$fp) throw new RuntimeException("Cannot write: $file");
@@ -30,10 +30,10 @@ function parseLine(string $line, int $id): array {
     $rest = $line;
 
     if (preg_match('/^x (\d{4}-\d{2}-\d{2}) /', $rest, $m)) {
-        $t['completed'] = true;
+        $t['completed']       = true;
         $t['completion_date'] = $m[1];
         $rest = substr($rest, strlen($m[0]));
-    } elseif (substr($rest, 0, 2) === 'x ') {
+    } elseif (str_starts_with($rest, 'x ')) {
         $t['completed'] = true;
         $rest = substr($rest, 2);
     }
@@ -60,6 +60,19 @@ function parseLine(string $line, int $id): array {
     return $t;
 }
 
+function parseLines(string $file): array {
+    $lines = readLines($file);
+    return array_map(fn($line, $i) => parseLine($line, $i), $lines, array_keys($lines));
+}
+
+function jsonOk(mixed ...$extra): void {
+    echo json_encode(array_merge(['success' => true], $extra[0] ?? []));
+}
+
+function jsonErr(string $msg): void {
+    echo json_encode(['success' => false, 'message' => $msg]);
+}
+
 if (isset($_GET['action'])) {
     header('Content-Type: application/json');
     $in = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -68,85 +81,58 @@ if (isset($_GET['action'])) {
         switch ($_GET['action']) {
 
             case 'list':
-                $lines = readLines(TODO_FILE);
-                $tasks = [];
-                foreach ($lines as $i => $line) {
-                    $tasks[] = parseLine($line, $i);
-                }
+                $tasks = parseLines(TODO_FILE);
                 usort($tasks, function($a, $b) {
-                    if ($a['completed'] !== $b['completed']) {
-                        return $a['completed'] ? 1 : -1;
-                    }
-                    return strcmp(
-                        isset($a['priority']) ? $a['priority'] : 'ZZZ',
-                        isset($b['priority']) ? $b['priority'] : 'ZZZ'
-                    );
+                    if ($a['completed'] !== $b['completed']) return $a['completed'] ? 1 : -1;
+                    return strcmp($a['priority'] ?? 'ZZZ', $b['priority'] ?? 'ZZZ');
                 });
                 echo json_encode(['success' => true, 'tasks' => $tasks, 'done_file_count' => count(readLines(DONE_FILE))]);
                 break;
 
             case 'add':
                 $text = trim($in['text'] ?? '');
-                if ($text === '') {
-                    echo json_encode(['success' => false, 'message' => 'Task text is empty']);
-                    break;
-                }
+                if ($text === '') { jsonErr('Task text is empty'); break; }
                 $date = date('Y-m-d');
-                if (preg_match('/^(\([A-Z]\) )/', $text, $m)) {
-                    $line = $m[1] . $date . ' ' . substr($text, strlen($m[1]));
-                } else {
-                    $line = "$date $text";
-                }
-                $lines = readLines(TODO_FILE);
+                $line = preg_match('/^(\([A-Z]\) )/', $text, $m)
+                    ? $m[1] . $date . ' ' . substr($text, strlen($m[1]))
+                    : "$date $text";
+                $lines   = readLines(TODO_FILE);
                 $lines[] = $line;
                 writeLines(TODO_FILE, $lines);
-                echo json_encode(['success' => true]);
+                jsonOk();
                 break;
 
             case 'complete':
-                $id = (int)($in['id'] ?? -1);
+                $id    = (int)($in['id'] ?? -1);
                 $lines = readLines(TODO_FILE);
-                if (!array_key_exists($id, $lines)) {
-                    echo json_encode(['success' => false, 'message' => 'Task not found']);
-                    break;
-                }
+                if (!array_key_exists($id, $lines)) { jsonErr('Task not found'); break; }
                 $t = parseLine($lines[$id], $id);
                 if (!$t['completed']) {
-                    $d = date('Y-m-d');
-                    $lines[$id] = "x $d " . ($t['creation_date'] ? $t['creation_date'] . ' ' : '') . $t['text'];
+                    $lines[$id] = 'x ' . date('Y-m-d') . ' ' . ($t['creation_date'] ? $t['creation_date'] . ' ' : '') . $t['text'];
                     writeLines(TODO_FILE, $lines);
                 }
-                echo json_encode(['success' => true]);
+                jsonOk();
                 break;
 
             case 'uncomplete':
-                $id = (int)($in['id'] ?? -1);
+                $id    = (int)($in['id'] ?? -1);
                 $lines = readLines(TODO_FILE);
-                if (!array_key_exists($id, $lines)) {
-                    echo json_encode(['success' => false, 'message' => 'Task not found']);
-                    break;
-                }
+                if (!array_key_exists($id, $lines)) { jsonErr('Task not found'); break; }
                 $t = parseLine($lines[$id], $id);
                 if ($t['completed']) {
                     $lines[$id] = ($t['creation_date'] ? $t['creation_date'] . ' ' : '') . $t['text'];
                     writeLines(TODO_FILE, $lines);
                 }
-                echo json_encode(['success' => true]);
+                jsonOk();
                 break;
 
             case 'update':
-                $id = (int)($in['id'] ?? -1);
+                $id      = (int)($in['id'] ?? -1);
                 $newText = trim($in['text'] ?? '');
-                if ($newText === '') {
-                    echo json_encode(['success' => false, 'message' => 'Task text is empty']);
-                    break;
-                }
+                if ($newText === '') { jsonErr('Task text is empty'); break; }
                 $lines = readLines(TODO_FILE);
-                if (!array_key_exists($id, $lines)) {
-                    echo json_encode(['success' => false, 'message' => 'Task not found']);
-                    break;
-                }
-                $t = parseLine($lines[$id], $id);
+                if (!array_key_exists($id, $lines)) { jsonErr('Task not found'); break; }
+                $t       = parseLine($lines[$id], $id);
                 $newLine = '';
                 if ($t['completed']) {
                     $newLine .= 'x ';
@@ -159,34 +145,25 @@ if (isset($_GET['action'])) {
                     $body = $newText;
                 }
                 if ($t['creation_date']) $newLine .= $t['creation_date'] . ' ';
-                $newLine .= $body;
-                $lines[$id] = $newLine;
+                $lines[$id] = $newLine . $body;
                 writeLines(TODO_FILE, $lines);
-                echo json_encode(['success' => true]);
+                jsonOk();
                 break;
 
             case 'delete':
-                $id = (int)($in['id'] ?? -1);
+                $id    = (int)($in['id'] ?? -1);
                 $lines = readLines(TODO_FILE);
-                if (!array_key_exists($id, $lines)) {
-                    echo json_encode(['success' => false, 'message' => 'Task not found']);
-                    break;
-                }
+                if (!array_key_exists($id, $lines)) { jsonErr('Task not found'); break; }
                 array_splice($lines, $id, 1);
                 writeLines(TODO_FILE, $lines);
-                echo json_encode(['success' => true]);
+                jsonOk();
                 break;
 
             case 'archive':
                 $lines = readLines(TODO_FILE);
-                $done = [];
-                $remaining = [];
+                $done = $remaining = [];
                 foreach ($lines as $line) {
-                    if (parseLine($line, 0)['completed']) {
-                        $done[] = $line;
-                    } else {
-                        $remaining[] = $line;
-                    }
+                    (parseLine($line, 0)['completed'] ? $done : $remaining)[] = $line;
                 }
                 writeLines(TODO_FILE, $remaining);
                 writeLines(DONE_FILE, array_merge(readLines(DONE_FILE), $done));
@@ -194,49 +171,38 @@ if (isset($_GET['action'])) {
                 break;
 
             case 'done-list':
-                $lines = readLines(DONE_FILE);
-                $tasks = [];
-                foreach ($lines as $i => $line) {
-                    $tasks[] = parseLine($line, $i);
-                }
-                echo json_encode(['success' => true, 'tasks' => $tasks]);
+                echo json_encode(['success' => true, 'tasks' => parseLines(DONE_FILE)]);
                 break;
 
             case 'done-delete':
-                $id = (int)($in['id'] ?? -1);
+                $id    = (int)($in['id'] ?? -1);
                 $lines = readLines(DONE_FILE);
-                if (!array_key_exists($id, $lines)) {
-                    echo json_encode(['success' => false, 'message' => 'Task not found']);
-                    break;
-                }
+                if (!array_key_exists($id, $lines)) { jsonErr('Task not found'); break; }
                 array_splice($lines, $id, 1);
                 writeLines(DONE_FILE, $lines);
-                echo json_encode(['success' => true]);
+                jsonOk();
                 break;
 
             case 'done-restore':
-                $id = (int)($in['id'] ?? -1);
+                $id    = (int)($in['id'] ?? -1);
                 $lines = readLines(DONE_FILE);
-                if (!array_key_exists($id, $lines)) {
-                    echo json_encode(['success' => false, 'message' => 'Task not found']);
-                    break;
-                }
-                $t = parseLine($lines[$id], $id);
-                $restored = ($t['creation_date'] ? $t['creation_date'] . ' ' : '') . $t['text'];
+                if (!array_key_exists($id, $lines)) { jsonErr('Task not found'); break; }
+                $t         = parseLine($lines[$id], $id);
+                $restored  = ($t['creation_date'] ? $t['creation_date'] . ' ' : '') . $t['text'];
                 $todoLines = readLines(TODO_FILE);
                 $todoLines[] = $restored;
                 writeLines(TODO_FILE, $todoLines);
                 array_splice($lines, $id, 1);
                 writeLines(DONE_FILE, $lines);
-                echo json_encode(['success' => true]);
+                jsonOk();
                 break;
 
             default:
-                echo json_encode(['success' => false, 'message' => 'Unknown action']);
+                jsonErr('Unknown action');
         }
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        jsonErr($e->getMessage());
     }
     exit;
 }
@@ -265,52 +231,52 @@ if (isset($_GET['action'])) {
     body { -webkit-tap-highlight-color: transparent; }
     input, button, select { font-family: inherit; }
 
-    html.dark body                        { background-color: #0f172a; color: #e2e8f0; }
-    html.dark .bg-white                   { background-color: #1e293b; }
-    html.dark .bg-slate-50                { background-color: #0f172a; }
-    html.dark .border-gray-100            { border-color: #334155; }
-    html.dark .border-gray-200            { border-color: #475569; }
-    html.dark .text-gray-900              { color: #f1f5f9; }
-    html.dark .text-gray-800              { color: #e2e8f0; }
-    html.dark .text-gray-700              { color: #cbd5e1; }
-    html.dark .text-gray-600              { color: #94a3b8; }
-    html.dark .text-gray-500              { color: #64748b; }
-    html.dark .text-gray-400              { color: #475569; }
-    html.dark .text-gray-300              { color: #334155; }
-    html.dark .bg-gray-100                { background-color: #334155; }
-    html.dark .hover\:bg-gray-100:hover   { background-color: #334155; }
-    html.dark .hover\:bg-gray-50:hover    { background-color: #2d3e52; }
-    html.dark .hover\:text-gray-700:hover { color: #e2e8f0; }
-    html.dark input, html.dark textarea   { background-color: #334155; color: #e2e8f0; border-color: #475569; }
-    html.dark input::placeholder          { color: #64748b; }
-    html.dark .bg-indigo-50               { background-color: #1e1b4b; }
-    html.dark .bg-indigo-100              { background-color: #312e81; }
-    html.dark .hover\:bg-indigo-50:hover  { background-color: #1e1b4b; }
-    html.dark .text-indigo-700            { color: #818cf8; }
-    html.dark .text-indigo-600            { color: #818cf8; }
-    html.dark .text-indigo-400            { color: #6366f1; }
-    html.dark .bg-emerald-50              { background-color: #052e16; }
-    html.dark .hover\:bg-emerald-100:hover{ background-color: #14532d; }
-    html.dark .text-emerald-700           { color: #34d399; }
-    html.dark .bg-green-50                { background-color: #052e16; }
-    html.dark .hover\:bg-green-50:hover   { background-color: #14532d; }
-    html.dark .border-green-200           { border-color: #166534; }
-    html.dark .text-green-600             { color: #4ade80; }
-    html.dark .bg-red-50                  { background-color: #450a0a; }
-    html.dark .bg-red-100                 { background-color: #450a0a; }
-    html.dark .hover\:bg-red-50:hover     { background-color: #7f1d1d; }
-    html.dark .border-red-100             { border-color: #7f1d1d; }
-    html.dark .text-red-400               { color: #f87171; }
-    html.dark .text-red-500               { color: #f87171; }
-    html.dark .text-red-600               { color: #f87171; }
-    html.dark .bg-amber-100               { background-color: #422006; }
-    html.dark .text-amber-600             { color: #fbbf24; }
-    html.dark .hover\:bg-amber-50:hover   { background-color: #422006; }
-    html.dark .bg-sky-100                 { background-color: #082f49; }
-    html.dark .text-sky-600               { color: #38bdf8; }
-    html.dark .shadow-sm                  { box-shadow: 0 1px 2px 0 rgba(0,0,0,0.5); }
-    html.dark .shadow-2xl                 { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); }
-    html.dark .shadow-xl                  { box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
+    html.dark body                         { background-color: #0f172a; color: #e2e8f0; }
+    html.dark .bg-white                    { background-color: #1e293b; }
+    html.dark .bg-slate-50                 { background-color: #0f172a; }
+    html.dark .border-gray-100             { border-color: #334155; }
+    html.dark .border-gray-200             { border-color: #475569; }
+    html.dark .text-gray-900               { color: #f1f5f9; }
+    html.dark .text-gray-800               { color: #e2e8f0; }
+    html.dark .text-gray-700               { color: #cbd5e1; }
+    html.dark .text-gray-600               { color: #94a3b8; }
+    html.dark .text-gray-500               { color: #64748b; }
+    html.dark .text-gray-400               { color: #475569; }
+    html.dark .text-gray-300               { color: #334155; }
+    html.dark .bg-gray-100                 { background-color: #334155; }
+    html.dark .hover\:bg-gray-100:hover    { background-color: #334155; }
+    html.dark .hover\:bg-gray-50:hover     { background-color: #2d3e52; }
+    html.dark .hover\:text-gray-700:hover  { color: #e2e8f0; }
+    html.dark input, html.dark textarea    { background-color: #334155; color: #e2e8f0; border-color: #475569; }
+    html.dark input::placeholder           { color: #64748b; }
+    html.dark .bg-indigo-50                { background-color: #1e1b4b; }
+    html.dark .bg-indigo-100               { background-color: #312e81; }
+    html.dark .hover\:bg-indigo-50:hover   { background-color: #1e1b4b; }
+    html.dark .text-indigo-700             { color: #818cf8; }
+    html.dark .text-indigo-600             { color: #818cf8; }
+    html.dark .text-indigo-400             { color: #6366f1; }
+    html.dark .bg-emerald-50               { background-color: #052e16; }
+    html.dark .hover\:bg-emerald-100:hover { background-color: #14532d; }
+    html.dark .text-emerald-700            { color: #34d399; }
+    html.dark .bg-green-50                 { background-color: #052e16; }
+    html.dark .hover\:bg-green-50:hover    { background-color: #14532d; }
+    html.dark .border-green-200            { border-color: #166534; }
+    html.dark .text-green-600              { color: #4ade80; }
+    html.dark .bg-red-50                   { background-color: #450a0a; }
+    html.dark .bg-red-100                  { background-color: #450a0a; }
+    html.dark .hover\:bg-red-50:hover      { background-color: #7f1d1d; }
+    html.dark .border-red-100              { border-color: #7f1d1d; }
+    html.dark .text-red-400                { color: #f87171; }
+    html.dark .text-red-500                { color: #f87171; }
+    html.dark .text-red-600                { color: #f87171; }
+    html.dark .bg-amber-100                { background-color: #422006; }
+    html.dark .text-amber-600              { color: #fbbf24; }
+    html.dark .hover\:bg-amber-50:hover    { background-color: #422006; }
+    html.dark .bg-sky-100                  { background-color: #082f49; }
+    html.dark .text-sky-600                { color: #38bdf8; }
+    html.dark .shadow-sm                   { box-shadow: 0 1px 2px 0 rgba(0,0,0,0.5); }
+    html.dark .shadow-2xl                  { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); }
+    html.dark .shadow-xl                   { box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-gray-800 antialiased">
@@ -433,31 +399,34 @@ if (isset($_GET['action'])) {
 const TODAY = new Date().toISOString().slice(0, 10);
 const SOON  = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
 
+const $ = id => document.getElementById(id);
+
 // ── Theme ────────────────────────────────────────────────────────
 function applyTheme(theme) {
   document.documentElement.classList.toggle('dark', theme === 'dark');
   const icon = theme === 'dark' ? '☀️' : '🌙';
-  const sideBtn = document.getElementById('theme-btn');
-  const mobBtn  = document.getElementById('theme-btn-mob');
-  if (sideBtn) sideBtn.textContent = icon;
-  if (mobBtn)  mobBtn.textContent  = icon;
+  $('theme-btn').textContent     = icon;
+  $('theme-btn-mob').textContent = icon;
   localStorage.setItem('theme', theme);
 }
 function toggleTheme() {
   applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
 }
-document.getElementById('theme-btn').addEventListener('click', toggleTheme);
-document.getElementById('theme-btn-mob').addEventListener('click', toggleTheme);
+$('theme-btn').addEventListener('click', toggleTheme);
+$('theme-btn-mob').addEventListener('click', toggleTheme);
 applyTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 
-// Sidebar link class sets
+// ── Constants ────────────────────────────────────────────────────
 const SB_ON  = 'flex items-center justify-between px-2.5 py-2 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 mb-0.5 transition-colors no-underline';
 const SB_OFF = 'flex items-center justify-between px-2.5 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 mb-0.5 transition-colors no-underline';
+
+const PRI_COLOR = { A: '#ef4444', B: '#f59e0b', C: '#38bdf8' };
+const PRI_BADGE = { A: 'bg-red-100 text-red-600', B: 'bg-amber-100 text-amber-600', C: 'bg-sky-100 text-sky-600' };
+const DUE_CLS   = { overdue: 'bg-red-100 text-red-600', today: 'bg-amber-100 text-amber-600', soon: 'bg-sky-100 text-sky-600', future: 'bg-gray-100 text-gray-500' };
 
 const state = { view: 'active', filter: null, filterType: null, tasks: [], doneTasks: [] };
 
 // ── Utilities ────────────────────────────────────────────────────
-
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -474,33 +443,38 @@ async function apiFetch(action, body) {
 
 function toast(msg, type) {
   const bg = { success: 'bg-emerald-600', danger: 'bg-red-500', info: 'bg-gray-800' }[type] || 'bg-gray-800';
-  const wrap = document.getElementById('toast-wrap');
   const el = document.createElement('div');
   el.className = `pointer-events-auto ${bg} text-white rounded-2xl px-4 py-3 shadow-xl flex items-start gap-3 text-sm`;
-  el.innerHTML = `<span class="flex-1 pt-px">${escHtml(msg)}</span>
-    <button class="opacity-60 hover:opacity-100 text-lg leading-none shrink-0 mt-px">&times;</button>`;
+  el.innerHTML = `<span class="flex-1 pt-px">${escHtml(msg)}</span><button class="opacity-60 hover:opacity-100 text-lg leading-none shrink-0 mt-px">&times;</button>`;
   el.querySelector('button').onclick = () => el.remove();
-  wrap.appendChild(el);
+  $('toast-wrap').appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
 
-// ── Modal ────────────────────────────────────────────────────────
+function renderTags(text, linked) {
+  return escHtml(text)
+    .replace(/\bdue:\d{4}-\d{2}-\d{2}\b/g, '')
+    .replace(/(?<!\S)\+(\S+)/g, (_, p) => linked
+      ? `<a href="#" class="inline-block align-middle text-[11px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded px-1.5 py-0.5 mr-0.5 tag-link" data-ft="project" data-fv="${p}">+${p}</a>`
+      : `<span class="inline-block align-middle text-[11px] bg-gray-100 text-gray-400 rounded px-1.5 py-0.5 mr-0.5">+${p}</span>`)
+    .replace(/(?<!\S)@(\S+)/g, (_, c) => linked
+      ? `<a href="#" class="inline-block align-middle text-[11px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded px-1.5 py-0.5 mr-0.5 tag-link" data-ft="context" data-fv="${c}">@${c}</a>`
+      : `<span class="inline-block align-middle text-[11px] bg-gray-100 text-gray-400 rounded px-1.5 py-0.5 mr-0.5">@${c}</span>`);
+}
 
-const editModalEl  = document.getElementById('edit-modal');
-const editModalCard = document.getElementById('edit-modal-card');
+// ── Modal ────────────────────────────────────────────────────────
+const editModalEl   = $('edit-modal');
+const editModalCard = $('edit-modal-card');
+const editInputEl   = $('edit-input');
 let editingId = null;
 
 function openEditModal(id, val) {
   editingId = id;
-  document.getElementById('edit-input').value = val;
+  editInputEl.value = val;
   editModalEl.classList.remove('hidden');
   editModalEl.classList.add('flex');
   document.body.style.overflow = 'hidden';
-  setTimeout(() => {
-    const inp = document.getElementById('edit-input');
-    inp.focus();
-    inp.setSelectionRange(inp.value.length, inp.value.length);
-  }, 50);
+  setTimeout(() => { editInputEl.focus(); editInputEl.setSelectionRange(val.length, val.length); }, 50);
 }
 
 function closeEditModal() {
@@ -511,65 +485,60 @@ function closeEditModal() {
 }
 
 editModalEl.addEventListener('click', closeEditModal);
-editModalCard.addEventListener('click', function(e) { e.stopPropagation(); });
-document.getElementById('modal-close').addEventListener('click', closeEditModal);
-document.getElementById('modal-cancel').addEventListener('click', closeEditModal);
+editModalCard.addEventListener('click', e => e.stopPropagation());
+$('modal-close').addEventListener('click', closeEditModal);
+$('modal-cancel').addEventListener('click', closeEditModal);
 
-document.getElementById('edit-save').addEventListener('click', async function() {
-  const text = document.getElementById('edit-input').value.trim();
+$('edit-save').addEventListener('click', async function() {
+  const text = editInputEl.value.trim();
   if (!text || editingId === null) return;
-  const btn = document.getElementById('edit-save');
-  btn.disabled = true;
+  this.disabled = true;
   try {
     const d = await apiFetch('update', { id: editingId, text });
     if (d.success) { closeEditModal(); await loadTasks(); }
     else toast(d.message || 'Save failed', 'danger');
   } catch (err) { toast(err.message, 'danger'); }
-  finally { btn.disabled = false; }
+  finally { this.disabled = false; }
 });
 
-document.getElementById('edit-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('edit-save').click();
-});
+editInputEl.addEventListener('keydown', e => { if (e.key === 'Enter') $('edit-save').click(); });
 
 // ── Data ─────────────────────────────────────────────────────────
-
 async function loadTasks() {
   try {
-    const r = await fetch('?action=list');
+    const r    = await fetch('?action=list');
     const text = await r.text();
     let d;
     try { d = JSON.parse(text); }
-    catch (e) {
-      document.getElementById('task-list').innerHTML =
+    catch {
+      $('task-list').innerHTML =
         '<div class="text-center text-red-500 py-8 text-sm p-4">JSON error — server returned:<br><pre class="mt-2 text-left text-xs bg-red-50 rounded p-2 overflow-auto">' + escHtml(text.slice(0, 500)) + '</pre></div>';
       return;
     }
     if (d.success) {
       state.tasks = d.tasks;
       const dfc = d.done_file_count || 0;
-      document.getElementById('done-file-count').textContent = dfc;
-      document.getElementById('mob-done-count').textContent  = dfc;
+      $('done-file-count').textContent = dfc;
+      $('mob-done-count').textContent  = dfc;
       render();
     } else {
-      document.getElementById('task-list').innerHTML =
-        '<div class="text-center text-red-500 py-8 text-sm">' + escHtml(d.message || 'Load failed') + '</div>';
+      $('task-list').innerHTML = '<div class="text-center text-red-500 py-8 text-sm">' + escHtml(d.message || 'Load failed') + '</div>';
     }
   } catch (err) {
-    document.getElementById('task-list').innerHTML =
-      '<div class="text-center text-red-500 py-8 text-sm">Fetch error: ' + escHtml(err.message) + '</div>';
+    $('task-list').innerHTML = '<div class="text-center text-red-500 py-8 text-sm">Fetch error: ' + escHtml(err.message) + '</div>';
   }
 }
 
 async function loadDone() {
-  const r = await fetch('?action=done-list');
-  const d = await r.json();
-  if (d.success) { state.doneTasks = d.tasks; render(); }
-  else toast(d.message || 'Load failed', 'danger');
+  try {
+    const r = await fetch('?action=done-list');
+    const d = await r.json();
+    if (d.success) { state.doneTasks = d.tasks; render(); }
+    else toast(d.message || 'Load failed', 'danger');
+  } catch (err) { toast(err.message, 'danger'); }
 }
 
 // ── Render ───────────────────────────────────────────────────────
-
 function render() {
   if (state.view === 'done') { renderDoneSidebar(); renderDoneList(); }
   else                       { renderSidebar();     renderList();     }
@@ -578,164 +547,123 @@ function render() {
 function updateMobileTabs() {
   const on  = 'flex-1 py-3 text-sm font-semibold text-indigo-700 border-b-2 border-indigo-600 transition-colors';
   const off = 'flex-1 py-3 text-sm font-medium  text-gray-400   border-b-2 border-transparent transition-colors';
-  document.getElementById('mob-tab-active').className = state.view === 'active' ? on : off;
-  document.getElementById('mob-tab-done').className   = state.view === 'done'   ? on : off;
+  $('mob-tab-active').className = state.view === 'active' ? on : off;
+  $('mob-tab-done').className   = state.view === 'done'   ? on : off;
 }
 
 function renderSidebar() {
-  const tasks     = state.tasks;
-  const projects  = [...new Set(tasks.flatMap(function(t) { return t.projects; }))].sort();
-  const contexts  = [...new Set(tasks.flatMap(function(t) { return t.contexts; }))].sort();
-  const doneCount = tasks.filter(function(t) { return t.completed; }).length;
-  const activeN   = tasks.filter(function(t) { return !t.completed; }).length;
+  let doneCount = 0, activeN = 0;
+  const projects = new Set(), contexts = new Set();
+  for (const t of state.tasks) {
+    t.completed ? doneCount++ : activeN++;
+    t.projects.forEach(p => projects.add(p));
+    t.contexts.forEach(c => contexts.add(c));
+  }
+  const sortedProjects = [...projects].sort();
+  const sortedContexts = [...contexts].sort();
 
-  document.getElementById('active-count').textContent     = activeN;
-  document.getElementById('mob-active-count').textContent = activeN;
-  document.getElementById('done-count').textContent       = doneCount;
-  document.getElementById('archive-btn').disabled         = doneCount === 0;
-
-  document.getElementById('filter-all').className = (state.filter === null) ? SB_ON : SB_OFF;
-  document.getElementById('view-done').className  = SB_OFF;
+  $('active-count').textContent     = activeN;
+  $('mob-active-count').textContent = activeN;
+  $('done-count').textContent       = doneCount;
+  $('archive-btn').disabled         = doneCount === 0;
+  $('filter-all').className         = state.filter === null ? SB_ON : SB_OFF;
+  $('view-done').className          = SB_OFF;
   updateMobileTabs();
 
-  const pEl = document.getElementById('sb-projects');
-  pEl.innerHTML = projects.length
+  $('sb-projects').innerHTML = sortedProjects.length
     ? '<p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-5 mb-1 px-1">Projects</p>' +
-      projects.map(function(p) {
+      sortedProjects.map(p => {
         const safe = escHtml(p);
-        const cls = (state.filterType === 'project' && state.filter === p) ? SB_ON : SB_OFF;
-        return '<a class="' + cls + '" href="#" data-ft="project" data-fv="' + safe + '">+' + safe + '</a>';
+        return '<a class="' + (state.filterType === 'project' && state.filter === p ? SB_ON : SB_OFF) + '" href="#" data-ft="project" data-fv="' + safe + '">+' + safe + '</a>';
       }).join('')
     : '';
 
-  const cEl = document.getElementById('sb-contexts');
-  cEl.innerHTML = contexts.length
+  $('sb-contexts').innerHTML = sortedContexts.length
     ? '<p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-4 mb-1 px-1">Contexts</p>' +
-      contexts.map(function(c) {
+      sortedContexts.map(c => {
         const safe = escHtml(c);
-        const cls = (state.filterType === 'context' && state.filter === c) ? SB_ON : SB_OFF;
-        return '<a class="' + cls + '" href="#" data-ft="context" data-fv="' + safe + '">@' + safe + '</a>';
+        return '<a class="' + (state.filterType === 'context' && state.filter === c ? SB_ON : SB_OFF) + '" href="#" data-ft="context" data-fv="' + safe + '">@' + safe + '</a>';
       }).join('')
     : '';
 
-  // Mobile chips
-  const chipEl = document.getElementById('mob-filter-chips');
-  if (chipEl) {
-    const base = 'text-xs px-2.5 py-1 rounded-full whitespace-nowrap transition-colors shrink-0 ';
-    const allActive = state.filter === null;
-    let html = '<button class="' + base + (allActive ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600') + '" data-ft="" data-fv="">All</button>';
-    projects.forEach(function(p) {
-      const on = state.filterType === 'project' && state.filter === p;
-      html += '<button class="' + base + (on ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700') + '" data-ft="project" data-fv="' + escHtml(p) + '">+' + escHtml(p) + '</button>';
-    });
-    contexts.forEach(function(c) {
-      const on = state.filterType === 'context' && state.filter === c;
-      html += '<button class="' + base + (on ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-600') + '" data-ft="context" data-fv="' + escHtml(c) + '">@' + escHtml(c) + '</button>';
-    });
-    chipEl.innerHTML = html;
-    chipEl.classList.toggle('hidden', projects.length === 0 && contexts.length === 0);
-  }
+  const chipEl  = $('mob-filter-chips');
+  const base    = 'text-xs px-2.5 py-1 rounded-full whitespace-nowrap transition-colors shrink-0 ';
+  let chips = '<button class="' + base + (state.filter === null ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600') + '" data-ft="" data-fv="">All</button>';
+  sortedProjects.forEach(p => {
+    const on = state.filterType === 'project' && state.filter === p;
+    chips += '<button class="' + base + (on ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700') + '" data-ft="project" data-fv="' + escHtml(p) + '">+' + escHtml(p) + '</button>';
+  });
+  sortedContexts.forEach(c => {
+    const on = state.filterType === 'context' && state.filter === c;
+    chips += '<button class="' + base + (on ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-600') + '" data-ft="context" data-fv="' + escHtml(c) + '">@' + escHtml(c) + '</button>';
+  });
+  chipEl.innerHTML = chips;
+  chipEl.classList.toggle('hidden', sortedProjects.length === 0 && sortedContexts.length === 0);
 }
 
 function renderDoneSidebar() {
-  document.getElementById('filter-all').className = SB_OFF;
-  document.getElementById('view-done').className  = SB_ON;
-  document.getElementById('sb-projects').innerHTML = '';
-  document.getElementById('sb-contexts').innerHTML = '';
-  const chipEl = document.getElementById('mob-filter-chips');
-  if (chipEl) chipEl.classList.add('hidden');
+  $('filter-all').className      = SB_OFF;
+  $('view-done').className       = SB_ON;
+  $('sb-projects').innerHTML     = '';
+  $('sb-contexts').innerHTML     = '';
+  $('mob-filter-chips').classList.add('hidden');
   updateMobileTabs();
 }
 
 function renderList() {
-  document.getElementById('add-panel').classList.remove('hidden');
+  $('add-panel').classList.remove('hidden');
+  const hasFilter = state.filter !== null;
+  const bar = $('filter-bar');
+  bar.classList.toggle('hidden', !hasFilter);
+  bar.classList.toggle('flex', hasFilter);
+  if (hasFilter) $('filter-label').textContent = (state.filterType === 'project' ? '+' : '@') + state.filter;
 
-  const bar = document.getElementById('filter-bar');
-  if (state.filter !== null) {
-    bar.classList.remove('hidden');
-    bar.classList.add('flex');
-    document.getElementById('filter-label').textContent =
-      (state.filterType === 'project' ? '+' : '@') + state.filter;
-  } else {
-    bar.classList.add('hidden');
-    bar.classList.remove('flex');
-  }
+  const visible = hasFilter
+    ? state.tasks.filter(t => state.filterType === 'project' ? t.projects.includes(state.filter) : t.contexts.includes(state.filter))
+    : state.tasks;
 
-  let visible = state.tasks;
-  if (state.filter !== null) {
-    const ft = state.filterType, fv = state.filter;
-    visible = state.tasks.filter(function(t) {
-      return ft === 'project' ? t.projects.indexOf(fv) >= 0 : t.contexts.indexOf(fv) >= 0;
-    });
-  }
-
-  const el = document.getElementById('task-list');
-  if (visible.length === 0) {
-    el.innerHTML = '<div class="text-center text-gray-400 py-16 text-sm">' +
-      (state.filter ? 'No tasks match this filter.' : 'No tasks yet — add one above!') + '</div>';
-    return;
-  }
-  el.innerHTML = visible.map(buildTaskHtml).join('');
+  $('task-list').innerHTML = visible.length
+    ? visible.map(buildTaskHtml).join('')
+    : '<div class="text-center text-gray-400 py-16 text-sm">' + (hasFilter ? 'No tasks match this filter.' : 'No tasks yet — add one above!') + '</div>';
 }
 
 function renderDoneList() {
-  document.getElementById('add-panel').classList.add('hidden');
-  document.getElementById('filter-bar').classList.add('hidden');
-  document.getElementById('filter-bar').classList.remove('flex');
+  $('add-panel').classList.add('hidden');
+  const bar = $('filter-bar');
+  bar.classList.add('hidden');
+  bar.classList.remove('flex');
 
-  const tasks = state.doneTasks.slice().sort(function(a, b) {
-    return (b.completion_date || '').localeCompare(a.completion_date || '');
-  });
-  const el = document.getElementById('task-list');
-  if (tasks.length === 0) {
-    el.innerHTML = '<div class="text-center text-gray-400 py-16 text-sm">No archived tasks yet.</div>';
-    return;
-  }
-  el.innerHTML = tasks.map(buildDoneTaskHtml).join('');
+  const tasks = state.doneTasks.slice().sort((a, b) => (b.completion_date || '').localeCompare(a.completion_date || ''));
+  $('task-list').innerHTML = tasks.length
+    ? tasks.map(buildDoneTaskHtml).join('')
+    : '<div class="text-center text-gray-400 py-16 text-sm">No archived tasks yet.</div>';
 }
 
 // ── Task card builders ───────────────────────────────────────────
-
 function buildTaskHtml(t) {
-  const PRI_COLOR = { A: '#ef4444', B: '#f59e0b', C: '#38bdf8' };
-  const PRI_BADGE = { A: 'bg-red-100 text-red-600', B: 'bg-amber-100 text-amber-600', C: 'bg-sky-100 text-sky-600' };
-  const DUE_COLOR = { overdue: 'bg-red-100 text-red-600', today: 'bg-amber-100 text-amber-600', soon: 'bg-sky-100 text-sky-600', future: 'bg-gray-100 text-gray-500' };
-
-  const borderColor = (t.priority && PRI_COLOR[t.priority]) ? PRI_COLOR[t.priority] : 'transparent';
-
-  const priBadge = t.priority
+  const borderColor = PRI_COLOR[t.priority] || 'transparent';
+  const priBadge    = t.priority
     ? '<span class="inline-block align-middle text-[10px] font-bold rounded px-1.5 py-0.5 mr-1.5 ' + (PRI_BADGE[t.priority] || 'bg-gray-100 text-gray-500') + '">' + escHtml(t.priority) + '</span>'
     : '';
 
-  var dueBadge = '';
+  let dueBadge = '';
   if (t.due) {
-    var dc = t.due < TODAY ? DUE_COLOR.overdue : t.due === TODAY ? DUE_COLOR.today : t.due <= SOON ? DUE_COLOR.soon : DUE_COLOR.future;
-    var dl = t.due < TODAY ? 'Overdue: ' + t.due : 'Due: ' + t.due;
+    const dc = t.due < TODAY ? DUE_CLS.overdue : t.due === TODAY ? DUE_CLS.today : t.due <= SOON ? DUE_CLS.soon : DUE_CLS.future;
+    const dl = t.due < TODAY ? 'Overdue: ' + t.due : 'Due: ' + t.due;
     dueBadge = '<span class="inline-block align-middle text-[10px] rounded px-1.5 py-0.5 ml-1 ' + dc + '">' + escHtml(dl) + '</span>';
   }
-
-  const safeText = escHtml(t.text)
-    .replace(/\bdue:\d{4}-\d{2}-\d{2}\b/g, '')
-    .replace(/(?<!\S)\+(\S+)/g, function(_, p) {
-      return '<a href="#" class="inline-block align-middle text-[11px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded px-1.5 py-0.5 mr-0.5 tag-link" data-ft="project" data-fv="' + p + '">+' + p + '</a>';
-    })
-    .replace(/(?<!\S)@(\S+)/g, function(_, c) {
-      return '<a href="#" class="inline-block align-middle text-[11px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded px-1.5 py-0.5 mr-0.5 tag-link" data-ft="context" data-fv="' + c + '">@' + c + '</a>';
-    });
-
-  const textCls = t.completed ? 'text-sm text-gray-400 line-through' : 'text-sm text-gray-800';
-  const cardCls = t.completed ? 'opacity-60' : '';
 
   const finishedBtn = t.completed
     ? '<button class="px-2.5 py-1 rounded-lg border border-gray-200 text-gray-400 hover:bg-gray-50 text-xs font-medium transition-colors" data-action="uncomplete" data-id="' + t.id + '">U</button>'
     : '<button class="px-2.5 py-1 rounded-lg border border-green-200 text-green-600 hover:bg-green-50 text-xs font-medium transition-colors" data-action="complete" data-id="' + t.id + '">F</button>';
 
   const editVal = escHtml((t.priority && !t.completed ? '(' + t.priority + ') ' : '') + t.text);
+  const textCls = t.completed ? 'text-sm text-gray-400 line-through' : 'text-sm text-gray-800';
 
-  return '<div class="bg-white rounded-xl shadow-sm px-3.5 py-2.5 flex gap-3 items-start border-l-4 ' + cardCls + '" style="border-left-color:' + borderColor + '">' +
+  return '<div class="bg-white rounded-xl shadow-sm px-3.5 py-2.5 flex gap-3 items-start border-l-4 ' + (t.completed ? 'opacity-60' : '') + '" style="border-left-color:' + borderColor + '">' +
     '<div class="flex-1 min-w-0">' +
       priBadge +
-      '<span class="' + textCls + '">' + safeText.trim() + '</span>' +
+      '<span class="' + textCls + '">' + renderTags(t.text, true).trim() + '</span>' +
       dueBadge +
       (t.creation_date ? '<span class="text-[11px] text-gray-300 ml-2">' + escHtml(t.creation_date) + '</span>' : '') +
     '</div>' +
@@ -748,40 +676,28 @@ function buildTaskHtml(t) {
 }
 
 function buildDoneTaskHtml(t) {
-  const safeText = escHtml(t.text)
-    .replace(/\bdue:\d{4}-\d{2}-\d{2}\b/g, '')
-    .replace(/(?<!\S)\+(\S+)/g, function(_, p) {
-      return '<span class="inline-block align-middle text-[11px] bg-gray-100 text-gray-400 rounded px-1.5 py-0.5 mr-0.5">+' + p + '</span>';
-    })
-    .replace(/(?<!\S)@(\S+)/g, function(_, c) {
-      return '<span class="inline-block align-middle text-[11px] bg-gray-100 text-gray-400 rounded px-1.5 py-0.5 mr-0.5">@' + c + '</span>';
-    });
-
   const datePart = t.completion_date
     ? '<span class="text-[11px] text-gray-300 ml-2">done ' + escHtml(t.completion_date) + '</span>'
     : '';
-
   return '<div class="bg-white rounded-xl shadow-sm px-3.5 py-2.5 flex gap-3 items-start border-l-4 opacity-50" style="border-left-color:transparent">' +
     '<div class="flex-1 min-w-0">' +
-      '<span class="text-sm text-gray-400 line-through">' + safeText.trim() + '</span>' + datePart +
+      '<span class="text-sm text-gray-400 line-through">' + renderTags(t.text, false).trim() + '</span>' + datePart +
     '</div>' +
     '<div class="flex gap-1.5 shrink-0">' +
       '<button class="w-8 h-8 rounded-lg border border-green-200 text-green-600 hover:bg-green-50 flex items-center justify-center transition-colors" data-done-action="restore" data-id="' + t.id + '" title="Restore">↩</button>' +
-      '<button class="w-8 h-8 rounded-lg border border-red-100  text-red-400   hover:bg-red-50   flex items-center justify-center transition-colors" data-done-action="delete"  data-id="' + t.id + '" title="Delete permanently">×</button>' +
+      '<button class="w-8 h-8 rounded-lg border border-red-100 text-red-400 hover:bg-red-50 flex items-center justify-center transition-colors" data-done-action="delete" data-id="' + t.id + '" title="Delete permanently">×</button>' +
     '</div>' +
   '</div>';
 }
 
 // ── Actions ──────────────────────────────────────────────────────
-
 function setFilter(type, val) {
   state.filterType = type;
-  state.filter = val;
+  state.filter     = val;
   render();
 }
 
-// Task list
-document.getElementById('task-list').addEventListener('click', async function(e) {
+$('task-list').addEventListener('click', async function(e) {
   const tag = e.target.closest('.tag-link');
   if (tag) { e.preventDefault(); setFilter(tag.dataset.ft, tag.dataset.fv); return; }
 
@@ -793,7 +709,7 @@ document.getElementById('task-list').addEventListener('click', async function(e)
     if (action === 'delete' && !confirm('Delete this task?')) return;
     btn.disabled = true;
     try {
-      const d = await apiFetch(action, { id: id });
+      const d = await apiFetch(action, { id });
       if (!d.success) toast(d.message || action + ' failed', 'danger');
       await loadTasks();
     } catch (err) { toast(err.message, 'danger'); btn.disabled = false; }
@@ -811,20 +727,18 @@ document.getElementById('task-list').addEventListener('click', async function(e)
       if (!d.success) toast(d.message || doneAction + ' failed', 'danger');
       else if (doneAction === 'restore') toast('Task restored to todo list', 'success');
       await loadDone();
-      const r2 = await fetch('?action=list');
-      const d2 = await r2.json();
+      const d2 = await apiFetch('list', null);
       if (d2.success) {
         state.tasks = d2.tasks;
         const dfc = d2.done_file_count || 0;
-        document.getElementById('done-file-count').textContent = dfc;
-        document.getElementById('mob-done-count').textContent  = dfc;
+        $('done-file-count').textContent = dfc;
+        $('mob-done-count').textContent  = dfc;
       }
     } catch (err) { toast(err.message, 'danger'); doneBtn.disabled = false; }
   }
 });
 
-// Sidebar
-document.getElementById('sidebar').addEventListener('click', async function(e) {
+$('sidebar').addEventListener('click', async function(e) {
   const link = e.target.closest('[data-ft]');
   if (link) { e.preventDefault(); setFilter(link.dataset.ft, link.dataset.fv); return; }
   if (e.target.closest('#filter-all')) {
@@ -835,8 +749,7 @@ document.getElementById('sidebar').addEventListener('click', async function(e) {
   }
 });
 
-// Mobile filter chips
-document.getElementById('mob-filter-chips').addEventListener('click', function(e) {
+$('mob-filter-chips').addEventListener('click', function(e) {
   const btn = e.target.closest('[data-ft]');
   if (!btn) return;
   const ft = btn.dataset.ft, fv = btn.dataset.fv;
@@ -845,33 +758,25 @@ document.getElementById('mob-filter-chips').addEventListener('click', function(e
   render();
 });
 
-// Mobile tabs
-document.getElementById('mob-tab-active').addEventListener('click', function() {
-  state.view = 'active'; state.filter = null; state.filterType = null; render();
-});
-document.getElementById('mob-tab-done').addEventListener('click', async function() {
-  state.view = 'done'; state.filter = null; state.filterType = null; await loadDone();
-});
+$('mob-tab-active').addEventListener('click', () => { state.view = 'active'; state.filter = null; state.filterType = null; render(); });
+$('mob-tab-done').addEventListener('click', async () => { state.view = 'done'; state.filter = null; state.filterType = null; await loadDone(); });
 
-// Add form
-document.getElementById('add-form').addEventListener('submit', async function(e) {
+$('add-form').addEventListener('submit', async function(e) {
   e.preventDefault();
-  const inp  = document.getElementById('new-task');
+  const inp  = $('new-task');
   const text = inp.value.trim();
   if (!text) return;
   try {
-    const d = await apiFetch('add', { text: text });
+    const d = await apiFetch('add', { text });
     if (d.success) { inp.value = ''; await loadTasks(); }
     else toast(d.message || 'Add failed', 'danger');
   } catch (err) { toast(err.message, 'danger'); }
 });
 
-// Clear filter
-document.getElementById('clear-filter').addEventListener('click', function() { setFilter(null, null); });
+$('clear-filter').addEventListener('click', () => setFilter(null, null));
 
-// Archive
-document.getElementById('archive-btn').addEventListener('click', async function() {
-  const n = state.tasks.filter(function(t) { return t.completed; }).length;
+$('archive-btn').addEventListener('click', async function() {
+  const n = state.tasks.filter(t => t.completed).length;
   if (!n) return;
   if (!confirm('Move ' + n + ' completed task' + (n > 1 ? 's' : '') + ' to done.txt?')) return;
   try {
@@ -881,11 +786,9 @@ document.getElementById('archive-btn').addEventListener('click', async function(
   } catch (err) { toast(err.message, 'danger'); }
 });
 
-// Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
-  const focused = document.activeElement;
-  const inInput = focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA');
-  if (e.key === 'n' && !inInput) { e.preventDefault(); document.getElementById('new-task').focus(); return; }
+  const inInput = document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA';
+  if (e.key === 'n' && !inInput) { e.preventDefault(); $('new-task').focus(); return; }
   if (e.key === 'Escape') {
     if (!editModalEl.classList.contains('hidden')) { closeEditModal(); return; }
     if (state.filter !== null) setFilter(null, null);
