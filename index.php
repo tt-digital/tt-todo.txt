@@ -161,9 +161,11 @@ if (isset($_GET['action'])) {
 
             case 'archive':
                 $lines = readLines(TODO_FILE);
-                $done = $remaining = [];
+                $done = [];
+                $remaining = [];
                 foreach ($lines as $line) {
-                    (parseLine($line, 0)['completed'] ? $done : $remaining)[] = $line;
+                    if (parseLine($line, 0)['completed']) { $done[] = $line; }
+                    else { $remaining[] = $line; }
                 }
                 writeLines(TODO_FILE, $remaining);
                 writeLines(DONE_FILE, array_merge(readLines(DONE_FILE), $done));
