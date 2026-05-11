@@ -1,0 +1,94 @@
+(A) 2026-05-01 Call accountant about Q1 taxes +Finance @phone due:2026-05-15
+(A) 2026-05-03 Review and sign contract with new supplier +Work @office due:2026-05-12
+(A) 2026-05-05 Fix login bug reported by client +Dev @computer due:2026-05-11
+(A) 2026-05-06 Renew car insurance +Finance @phone due:2026-05-20
+(A) 2026-05-08 Prepare slides for Monday presentation +Work @computer due:2026-05-13
+(A) 2026-05-09 Doctor appointment for annual checkup +Health @phone due:2026-05-14
+(B) 2026-05-01 Write unit tests for payment module +Dev @computer
+(B) 2026-05-02 Order new standing desk +Home @computer due:2026-05-18
+(B) 2026-05-02 Update team wiki with new deployment process +Work @computer
+(B) 2026-05-03 Schedule dentist appointment +Health @phone
+(B) 2026-05-03 Research flights to Barcelona +Travel @computer due:2026-05-25
+(B) 2026-05-04 Refactor API authentication layer +Dev @computer
+(B) 2026-05-04 Buy birthday gift for Sarah +Shopping @errands due:2026-05-16
+(B) 2026-05-05 Review pull requests from team +Dev @computer
+(B) 2026-05-05 Cancel unused SaaS subscriptions +Finance @computer
+(B) 2026-05-06 Set up automatic backups for server +Dev @computer
+(B) 2026-05-07 Clean out garage +Home @home
+(B) 2026-05-07 Reply to job application emails +Work @email
+(B) 2026-05-08 Plan Q3 roadmap with team +Work @office due:2026-05-19
+(B) 2026-05-09 Read "Shape Up" book +Personal @home
+(C) 2026-05-01 Organize photos from last vacation +Personal @computer
+(C) 2026-05-01 Look into meal prep services +Health @computer
+(C) 2026-05-02 Update LinkedIn profile +Work @computer
+(C) 2026-05-02 Fix broken garden fence +Home @home
+(C) 2026-05-03 Try new running route in the park +Health @outside
+(C) 2026-05-03 Learn basics of Rust language +Dev @computer
+(C) 2026-05-04 Donate old clothes to charity +Home @errands
+(C) 2026-05-04 Watch conference talk on system design +Dev @computer
+(C) 2026-05-05 Set up password manager for whole family +Personal @computer
+(C) 2026-05-05 Repot the large monstera plant +Home @home
+(C) 2026-05-06 Find a good podcast on finance +Personal @phone
+(C) 2026-05-06 Write blog post about recent project +Work @computer
+(C) 2026-05-07 Buy new running shoes +Shopping @errands
+(C) 2026-05-07 Research electric bikes +Personal @computer
+(C) 2026-05-08 Clean up old Docker images on dev machine +Dev @computer
+(C) 2026-05-08 Send thank-you note to mentor +Personal @email
+(C) 2026-05-09 Look into conference talks for autumn +Work @computer
+(C) 2026-05-09 Buy new bath towels +Shopping @errands
+(C) 2026-05-10 Set up a reading nook in bedroom +Home @home
+(C) 2026-05-10 Test new CI pipeline on staging +Dev @computer
+2026-05-01 Pick up dry cleaning +Shopping @errands
+2026-05-01 Call mum on Sunday +Personal @phone
+2026-05-02 Restock coffee and tea in office kitchen +Work @errands
+2026-05-02 Water all plants before leaving for trip +Home @home
+2026-05-03 Submit expense report for April +Finance @computer
+2026-05-03 Back up laptop to external drive +Personal @computer
+2026-05-04 Book table for anniversary dinner +Personal @phone due:2026-05-22
+2026-05-04 Check if passport is still valid +Travel @home
+2026-05-05 Return library books +Personal @errands due:2026-05-13
+2026-05-05 Print boarding pass for Thursday flight +Travel @computer due:2026-05-12
+2026-05-06 Remind team about Friday retro +Work @email
+2026-05-06 Buy groceries for the week +Shopping @errands
+2026-05-07 Top up emergency savings account +Finance @computer
+2026-05-07 Change air filter in apartment +Home @home
+2026-05-08 Review monthly budget +Finance @computer
+2026-05-08 Check in for flight online +Travel @computer due:2026-05-11
+2026-05-09 Send invoice to client +Finance @email due:2026-05-12
+2026-05-09 Ping designer about homepage mockup +Work @email
+2026-05-10 Migrate database to new server +Dev @computer due:2026-05-17
+2026-05-10 Write weekly update for stakeholders +Work @computer
+2026-05-11 Unsubscribe from marketing newsletters +Personal @email
+2026-05-11 Add error monitoring to production +Dev @computer
+x 2026-05-10 2026-05-01 Set up project repository on GitHub +Dev @computer
+x 2026-05-10 2026-05-02 Buy new laptop charger +Shopping @errands
+x 2026-05-09 2026-05-02 Finish onboarding documentation +Work @computer
+x 2026-05-09 2026-05-03 Call internet provider about slow speeds +Home @phone
+x 2026-05-08 2026-05-03 Submit tax return +Finance @computer
+x 2026-05-08 2026-05-04 Update dependencies in main project +Dev @computer
+x 2026-05-07 2026-05-04 Send weekly newsletter +Work @email
+x 2026-05-07 2026-05-04 Buy birthday card for dad +Shopping @errands
+x 2026-05-06 2026-05-05 Fix CSS layout issue on mobile +Dev @computer
+x 2026-05-06 2026-05-05 Schedule team lunch +Work @phone
+x 2026-05-05 2026-05-01 Renew domain names for next year +Dev @computer
+x 2026-05-05 2026-05-02 Clean out email inbox +Personal @email
+x 2026-05-04 2026-05-01 Research new project management tool +Work @computer
+x 2026-05-04 2026-05-02 Book hotel for summer holiday +Travel @computer
+x 2026-05-03 2026-05-01 Set up two-factor auth on all accounts +Personal @computer
+x 2026-05-03 2026-05-02 Order business cards +Work @computer
+x 2026-05-02 2026-04-29 Finish reading "Clean Code" +Personal @home
+x 2026-05-02 2026-04-30 Pay electricity bill +Finance @computer
+x 2026-05-01 2026-04-28 Deploy hotfix to production +Dev @computer
+x 2026-05-01 2026-04-29 Grocery run for dinner party +Shopping @errands
+x 2026-04-30 2026-04-25 Write retrospective notes from last sprint +Work @computer
+x 2026-04-30 2026-04-26 Cancel gym membership +Finance @phone
+x 2026-04-29 2026-04-24 Review candidates for junior dev position +Work @computer
+x 2026-04-29 2026-04-25 Install smoke detectors in hallway +Home @home
+x 2026-04-28 2026-04-22 Set up staging environment +Dev @computer
+x 2026-04-28 2026-04-23 Donate to open source project +Personal @computer
+x 2026-04-27 2026-04-21 Plan team offsite agenda +Work @computer
+x 2026-04-27 2026-04-22 Buy new coffee maker for office +Work @errands
+x 2026-04-26 2026-04-20 Archive old project files +Work @computer
+x 2026-04-26 2026-04-21 Fix broken link on company website +Dev @computer
+x 2026-04-25 2026-04-19 Set up monitoring dashboard +Dev @computer
+x 2026-04-25 2026-04-20 Send contract to new freelancer +Work @email
