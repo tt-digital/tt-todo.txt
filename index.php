@@ -660,9 +660,9 @@ function buildTaskHtml(t) {
     : '<button class="px-2.5 py-1 rounded-lg border border-green-200 text-green-600 hover:bg-green-50 text-xs font-medium transition-colors" data-action="complete" data-id="' + t.id + '">F</button>';
 
   const editVal = escHtml((t.priority && !t.completed ? '(' + t.priority + ') ' : '') + t.text);
-  const textCls = t.completed ? 'text-sm text-gray-400 line-through' : 'text-sm text-gray-800';
+  const textCls = t.completed ? 'text-sm text-gray-500 line-through' : 'text-sm text-gray-800';
 
-  return '<div class="bg-white rounded-xl shadow-sm px-3.5 py-2.5 flex gap-3 items-start border-l-4 ' + (t.completed ? 'opacity-60' : '') + '" style="border-left-color:' + borderColor + '">' +
+  return '<div class="bg-white rounded-xl shadow-sm px-3.5 py-2.5 flex gap-3 items-start border-l-4 ' + (t.completed ? 'opacity-80' : '') + '" style="border-left-color:' + borderColor + '">' +
     '<div class="flex-1 min-w-0">' +
       priBadge +
       '<span class="' + textCls + '">' + renderTags(t.text, true).trim() + '</span>' +
@@ -681,9 +681,9 @@ function buildDoneTaskHtml(t) {
   const datePart = t.completion_date
     ? '<span class="text-[11px] text-gray-300 ml-2">done ' + escHtml(t.completion_date) + '</span>'
     : '';
-  return '<div class="bg-white rounded-xl shadow-sm px-3.5 py-2.5 flex gap-3 items-start border-l-4 opacity-50" style="border-left-color:transparent">' +
+  return '<div class="bg-white rounded-xl shadow-sm px-3.5 py-2.5 flex gap-3 items-start border-l-4 opacity-75" style="border-left-color:transparent">' +
     '<div class="flex-1 min-w-0">' +
-      '<span class="text-sm text-gray-400 line-through">' + renderTags(t.text, false).trim() + '</span>' + datePart +
+      '<span class="text-sm text-gray-600 line-through">' + renderTags(t.text, false).trim() + '</span>' + datePart +
     '</div>' +
     '<div class="flex gap-1.5 shrink-0">' +
       '<button class="w-8 h-8 rounded-lg border border-green-200 text-green-600 hover:bg-green-50 flex items-center justify-center transition-colors" data-done-action="restore" data-id="' + t.id + '" title="Restore">↩</button>' +
