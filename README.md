@@ -1,6 +1,6 @@
 # tt-todo.txt
 
-A minimal, single-file PHP frontend for the [todo.txt](https://github.com/todotxt/todo.txt) plain-text task format.
+A minimal, single-file PHP frontend for the [todo.txt](http://todotxt.org) plain-text task format.
 
 ![Screenshot](screenshot.png)
 
